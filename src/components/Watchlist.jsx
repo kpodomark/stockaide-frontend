@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { Search, Plus, Eye } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Watchlist() {
   const [searchTicker, setSearchTicker] = useState('');
