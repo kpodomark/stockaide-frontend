@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, MessageSquare, Send, TrendingUp, TrendingDown, MinusCircle, Clock, Trash2 } from 'lucide-react';
+import { Search, MessageSquare, Send, TrendingUp, TrendingDown, MinusCircle, Clock, Trash2, Plus, Check } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { addToWatchlist } from '../services/watchlistService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -68,6 +70,11 @@ export default function Research() {
   const [savedChats, setSavedChats] = useState([]);
   const [currentSessionSaved, setCurrentSessionSaved] = useState(false);
 
+  // Watchlist state
+  const { user } = useAuth();
+  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+
   // Load saved chats when analysis changes
   useEffect(() => {
     if (analysis) {
@@ -101,6 +108,32 @@ export default function Research() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddToWatchlist = async () => {
+    if (!analysis || !user) return;
+    
+    try {
+      setAddingToWatchlist(true);
+      await addToWatchlist(user.uid, {
+        ticker: analysis.ticker,
+        companyName: analysis.company?.name || analysis.ticker,
+        entryScore: analysis.insights?.entryScore,
+        qualityGrade: analysis.quality?.grade,
+        currentPrice: analysis.priceData?.currentPrice
+      });
+      setInWatchlist(true);
+      setTimeout(() => setInWatchlist(false), 3000); // Reset after 3 seconds
+    } catch (error) {
+      if (error.message === 'Stock already in watchlist') {
+        alert('This stock is already in your watchlist!');
+      } else {
+        alert('Failed to add to watchlist. Please try again.');
+      }
+      console.error(error);
+    } finally {
+      setAddingToWatchlist(false);
     }
   };
 
@@ -253,7 +286,33 @@ Provide a helpful, concise response based on the analysis data above. Reference 
         <div className="space-y-6">
           {/* Price Data Header */}
           <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-            <h2 className="text-2xl font-bold text-white mb-4">{analysis.ticker}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-white">{analysis.ticker}</h2>
+              
+              {/* Add to Watchlist Button */}
+              <button
+                onClick={handleAddToWatchlist}
+                disabled={addingToWatchlist || inWatchlist}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+                  inWatchlist
+                    ? 'bg-green-600 text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50'
+                }`}
+              >
+                {inWatchlist ? (
+                  <>
+                    <Check size={18} />
+                    Added to Watchlist
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} />
+                    {addingToWatchlist ? 'Adding...' : 'Add to Watchlist'}
+                  </>
+                )}
+              </button>
+            </div>
+
             <div className="grid grid-cols-4 gap-4">
               <div>
                 <p className="text-slate-400 text-sm">Current Price</p>
