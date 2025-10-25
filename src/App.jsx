@@ -1,30 +1,92 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './components/Dashboard';
-import Watchlist from './components/Watchlist';
-import Analysis from './components/Analysis';
-import Chat from './components/Chat';
+// src/App.jsx
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Navigation from './components/Navigation';
+import Research from './pages/Research';
+import WatchlistPage from './pages/WatchlistPage';
+import Portfolio from './pages/Portfolio';
+import Learn from './pages/Learn';
+import Login from './pages/Login';
 
-export default function App() {
+// Protected Route wrapper
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-800 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+}
+
+function AppContent() {
+  const { user } = useAuth();
+
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <nav className="bg-slate-800 border-b border-slate-700 p-4">
-          <div className="max-w-7xl mx-auto flex gap-6">
-            <a href="/" className="text-white font-bold text-xl">Stock Aide</a>
-            <a href="/dashboard" className="text-slate-300 hover:text-white">Dashboard</a>
-            <a href="/watchlist" className="text-slate-300 hover:text-white">Watchlist</a>
-            <a href="/chat" className="text-slate-300 hover:text-white">Chat</a>
-          </div>
-        </nav>
-
+      <div className="min-h-screen bg-slate-800">
+        {user && <Navigation />}
+        
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/watchlist" element={<Watchlist />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/chat" element={<Chat />} />
+          <Route path="/login" element={user ? <Navigate to="/research" /> : <Login />} />
+          
+          <Route
+            path="/research"
+            element={
+              <ProtectedRoute>
+                <Research />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/watchlist"
+            element={
+              <ProtectedRoute>
+                <WatchlistPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/portfolio"
+            element={
+              <ProtectedRoute>
+                <Portfolio />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/learn"
+            element={
+              <ProtectedRoute>
+                <Learn />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route path="/" element={<Navigate to="/research" />} />
         </Routes>
       </div>
     </Router>
   );
 }
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+export default App;
